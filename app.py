@@ -751,38 +751,38 @@ def show_manage_orders(manager):
                     technician = next((t for t in technicians if t["id"] == selected_order_data["technician_id"]), {})
                     
                     with st.expander(f"📋 Detalhes - {selected_order_data['order_number']}", expanded=True):
-    col1, col2 = st.columns(2)
-
-    # --- Coluna 1: Cliente e serviço ---
-    with col1:
-        st.markdown(f"**🏠 Cliente:** {client.get('name', 'N/A')}")
-        st.markdown(f"**📍 Endereço:** {client.get('address', 'N/A')}")
-        st.markdown(f"**🌐 CTO:** {client.get('cto', 'N/A')}")
-        st.markdown(f"**📊 Plano:** {client.get('plan', 'N/A')}")
-        st.markdown(f"**🔧 Serviço:** {service.get('name', 'N/A')}")
-        st.markdown(f"**💰 Valor:** R$ {selected_order_data.get('estimated_cost', 0):.2f}")
-
-    # --- Coluna 2: Técnico e agendamento ---
-    with col2:
-        st.markdown(f"**👨‍🔧 Técnico:** {technician.get('name', 'N/A')}")
-        st.markdown(f"**🌍 Região:** {technician.get('region', 'N/A')}")
-        st.markdown(f"**📅 Data:** {selected_order_data.get('scheduled_date', 'N/A')}")
-        st.markdown(f"**🕐 Hora:** {selected_order_data.get('scheduled_time', 'N/A')}")
-        st.markdown(f"**⚡ Prioridade:** {selected_order_data.get('priority', 'N/A')}")
-        st.markdown(f"**📊 Status:** {selected_order_data.get('status', 'N/A')}")
-
-    # --- Extras ---
-    if selected_order_data.get('signal_level'):
-        st.markdown(f"**📶 Sinal:** {selected_order_data['signal_level']} dBm")
-
-    if selected_order_data.get('equipment_used'):
-        equipment_str = ', '.join(selected_order_data['equipment_used']) if isinstance(selected_order_data['equipment_used'], list) else selected_order_data['equipment_used']
-        st.markdown(f"**📦 Equipamentos:** {equipment_str}")
-
-    st.markdown(f"**📝 Descrição:** {selected_order_data.get('description', 'N/A')}")
-
-    if selected_order_data.get('observations'):
-        st.markdown(f"**📋 Observações:** {selected_order_data['observations']}")
+                        col1, col2 = st.columns(2)
+                    
+                        # --- Coluna 1: Cliente e serviço ---
+                        with col1:
+                            st.markdown(f"**🏠 Cliente:** {client.get('name', 'N/A')}")
+                            st.markdown(f"**📍 Endereço:** {client.get('address', 'N/A')}")
+                            st.markdown(f"**🌐 CTO:** {client.get('cto', 'N/A')}")
+                            st.markdown(f"**📊 Plano:** {client.get('plan', 'N/A')}")
+                            st.markdown(f"**🔧 Serviço:** {service.get('name', 'N/A')}")
+                            st.markdown(f"**💰 Valor:** R$ {selected_order_data.get('estimated_cost', 0):.2f}")
+                    
+                        # --- Coluna 2: Técnico e agendamento ---
+                        with col2:
+                            st.markdown(f"**👨‍🔧 Técnico:** {technician.get('name', 'N/A')}")
+                            st.markdown(f"**🌍 Região:** {technician.get('region', 'N/A')}")
+                            st.markdown(f"**📅 Data:** {selected_order_data.get('scheduled_date', 'N/A')}")
+                            st.markdown(f"**🕐 Hora:** {selected_order_data.get('scheduled_time', 'N/A')}")
+                            st.markdown(f"**⚡ Prioridade:** {selected_order_data.get('priority', 'N/A')}")
+                            st.markdown(f"**📊 Status:** {selected_order_data.get('status', 'N/A')}")
+                    
+                        # --- Extras ---
+                        if selected_order_data.get('signal_level'):
+                            st.markdown(f"**📶 Sinal:** {selected_order_data['signal_level']} dBm")
+                    
+                        if selected_order_data.get('equipment_used'):
+                            equipment_str = ', '.join(selected_order_data['equipment_used']) if isinstance(selected_order_data['equipment_used'], list) else selected_order_data['equipment_used']
+                            st.markdown(f"**📦 Equipamentos:** {equipment_str}")
+                    
+                        st.markdown(f"**📝 Descrição:** {selected_order_data.get('description', 'N/A')}")
+                    
+                        if selected_order_data.get('observations'):
+                            st.markdown(f"**📋 Observações:** {selected_order_data['observations']}")
 
 
 def show_calendar(manager):
@@ -1437,5 +1437,6 @@ if __name__ == "__main__":
     # Mostrar schema do banco (apenas para desenvolvimento)
     if st.sidebar.checkbox("🗄️ Mostrar Schema SQL"):
         show_database_schema()
+
 
 
