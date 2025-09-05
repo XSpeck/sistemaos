@@ -183,7 +183,16 @@ class FiberOpticServiceManager:
         except Exception as e:
             st.error(f"Erro ao buscar ordens: {e}")
             return []
-    
+            
+    def delete_order(self, order_id):
+        try:
+            result = self.supabase.table('service_orders').delete().eq('id', order_id).execute()
+            # Retorna True se deletou ao menos uma linha
+            return bool(result.data)
+        except Exception as e:
+            st.error(f"Erro ao excluir OS: {e}")
+            return False
+        
     def get_orders_dataframe(self):
         orders = self.get_all_orders()
         if not orders:
