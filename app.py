@@ -750,40 +750,56 @@ def show_manage_orders(manager):
                     service = next((s for s in services if s["id"] == selected_order_data["service_id"]), {})
                     technician = next((t for t in technicians if t["id"] == selected_order_data["technician_id"]), {})
                     
+                    def card(title, content):
+                        st.markdown(
+                            f"""
+                            <div style="
+                                background-color: #f9f9f9; 
+                                padding: 15px; 
+                                border-radius: 10px; 
+                                margin-bottom: 10px;
+                                box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                            ">
+                                <h4 style="margin:0 0 5px 0;">{title}</h4>
+                                <p style="margin:0;">{content}</p>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                    
                     with st.expander(f"📋 Detalhes - {selected_order_data['order_number']}", expanded=True):
                         col1, col2 = st.columns(2)
                     
                         # --- Coluna 1: Cliente e serviço ---
                         with col1:
-                            st.markdown(f"**🏠 Cliente:** {client.get('name', 'N/A')}")
-                            st.markdown(f"**📍 Endereço:** {client.get('address', 'N/A')}")
-                            st.markdown(f"**🌐 CTO:** {client.get('cto', 'N/A')}")
-                            st.markdown(f"**📊 Plano:** {client.get('plan', 'N/A')}")
-                            st.markdown(f"**🔧 Serviço:** {service.get('name', 'N/A')}")
-                            st.markdown(f"**💰 Valor:** R$ {selected_order_data.get('estimated_cost', 0):.2f}")
+                            card("🏠 Cliente", client.get('name', 'N/A'))
+                            card("📍 Endereço", client.get('address', 'N/A'))
+                            card("🌐 CTO", client.get('cto', 'N/A'))
+                            card("📊 Plano", client.get('plan', 'N/A'))
+                            card("🔧 Serviço", service.get('name', 'N/A'))
+                            card("💰 Valor", f"R$ {selected_order_data.get('estimated_cost', 0):.2f}")
                     
                         # --- Coluna 2: Técnico e agendamento ---
                         with col2:
-                            st.markdown(f"**👨‍🔧 Técnico:** {technician.get('name', 'N/A')}")
-                            st.markdown(f"**🌍 Região:** {technician.get('region', 'N/A')}")
-                            st.markdown(f"**📅 Data:** {selected_order_data.get('scheduled_date', 'N/A')}")
-                            st.markdown(f"**🕐 Hora:** {selected_order_data.get('scheduled_time', 'N/A')}")
-                            st.markdown(f"**⚡ Prioridade:** {selected_order_data.get('priority', 'N/A')}")
-                            st.markdown(f"**📊 Status:** {selected_order_data.get('status', 'N/A')}")
+                            card("👨‍🔧 Técnico", technician.get('name', 'N/A'))
+                            card("🌍 Região", technician.get('region', 'N/A'))
+                            card("📅 Data", selected_order_data.get('scheduled_date', 'N/A'))
+                            card("🕐 Hora", selected_order_data.get('scheduled_time', 'N/A'))
+                            card("⚡ Prioridade", selected_order_data.get('priority', 'N/A'))
+                            card("📊 Status", selected_order_data.get('status', 'N/A'))
                     
-                        # --- Extras ---
+                        # --- Extras abaixo ---
                         if selected_order_data.get('signal_level'):
-                            st.markdown(f"**📶 Sinal:** {selected_order_data['signal_level']} dBm")
+                            card("📶 Sinal", f"{selected_order_data['signal_level']} dBm")
                     
                         if selected_order_data.get('equipment_used'):
                             equipment_str = ', '.join(selected_order_data['equipment_used']) if isinstance(selected_order_data['equipment_used'], list) else selected_order_data['equipment_used']
-                            st.markdown(f"**📦 Equipamentos:** {equipment_str}")
+                            card("📦 Equipamentos", equipment_str)
                     
-                        st.markdown(f"**📝 Descrição:** {selected_order_data.get('description', 'N/A')}")
+                        card("📝 Descrição", selected_order_data.get('description', 'N/A'))
                     
                         if selected_order_data.get('observations'):
-                            st.markdown(f"**📋 Observações:** {selected_order_data['observations']}")
-
+                            card("📋 Observações", selected_order_data['observations'])
 
 def show_calendar(manager):
     """Visualização em calendário para fibra óptica"""
@@ -1437,6 +1453,7 @@ if __name__ == "__main__":
     # Mostrar schema do banco (apenas para desenvolvimento)
     if st.sidebar.checkbox("🗄️ Mostrar Schema SQL"):
         show_database_schema()
+
 
 
 
