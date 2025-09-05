@@ -98,7 +98,7 @@ def show_manage_orders(manager):
                     else:
                         st.error("❌ OS não encontrada")
 
-            # Se uma OS foi selecionada, mostra opções de atualização
+            # Se uma OS foi selecionada, mostra opções de atualização e exclusão
             if selected_order_id and selected_order_display:
                 st.markdown("---")
                 st.markdown(f"**📋 OS Selecionada:** `{selected_order_display.split(' | ')[0]}`")
@@ -140,6 +140,19 @@ def show_manage_orders(manager):
                         st.rerun()
                     else:
                         st.error("❌ Erro ao atualizar status")
+
+                # Botão para excluir OS com confirmação extra
+                confirm_delete = st.checkbox("Confirmo que desejo excluir esta OS permanentemente.", value=False)
+                if st.button("🗑️ Excluir OS Selecionada", type="secondary", use_container_width=True):
+                    if confirm_delete:
+                        result = manager.delete_order(selected_order_id)
+                        if result:
+                            st.success("🗑️ OS excluída com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro ao excluir OS")
+                    else:
+                        st.warning("⚠️ Marque a caixa de confirmação para excluir a OS.")
 
     with col2:
         st.subheader("🔍 Detalhes da OS")
@@ -230,3 +243,12 @@ def show_manage_orders(manager):
                         satisfaction = selected_order_data['customer_satisfaction']
                         stars = "⭐" * int(satisfaction)
                         st.markdown(f"**😊 Satisfação:** {satisfaction}/5 {stars}")
+
+# Adicione esse método ao seu manager:
+# def delete_order(self, order_id):
+#     try:
+#         result = self.supabase.table('service_orders').delete().eq('id', order_id).execute()
+#         return result
+#     except Exception as e:
+#         st.error(f"Erro ao excluir OS: {e}")
+#         return None
