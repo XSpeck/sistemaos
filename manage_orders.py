@@ -4,7 +4,7 @@ import pandas as pd
 def show_manage_orders(manager):
     """Página para gerenciar ordens de fibra óptica"""
     st.header("🔧 Gerenciar OS - Fibra Óptica")
-    
+
     # Filtros específicos para fibra óptica
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -15,10 +15,10 @@ def show_manage_orders(manager):
         service_type_filter = st.selectbox("Tipo", ["Todos", "Instalação", "Reparo", "Manutenção", "Upgrade", "Cancelamento"])
     with col4:
         region_filter = st.selectbox("Região", ["Todas", "Centro", "Zona Sul", "Zona Norte", "Zona Oeste", "Zona Leste"])
-    
+
     # DataFrame das ordens
     df = manager.get_orders_dataframe()
-    
+
     if not df.empty:
         # Aplicar filtros
         if status_filter != "Todos":
@@ -29,20 +29,19 @@ def show_manage_orders(manager):
             df = df[df["Tipo"] == service_type_filter]
         if region_filter != "Todas":
             df = df[df["Região"] == region_filter]
-        
+
         st.dataframe(df, use_container_width=True)
-        
+
         # Atualização de status
         st.markdown("---")
         col1, col2 = st.columns(2)
-        
+
         with col1:
             st.subheader("📝 Atualizar Status da OS")
             if len(df) > 0:
-                # Busca aprimorada para seleção de OS
                 st.markdown("**🔍 Buscar OS para Atualizar:**")
-                search_method = st.radio("Método de Busca:", 
-                                        ["📋 Por Lista", "🔍 Por Pesquisa", "📱 Por Número"], 
+                search_method = st.radio("Método de Busca:",
+                                        ["📋 Por Lista", "🔍 Por Pesquisa", "📱 Por Número"],
                                         horizontal=True)
                 selected_order_id = None
                 selected_order_display = None
@@ -94,10 +93,10 @@ def show_manage_orders(manager):
 
                     current_status = selected_order_display.split(' | ')[2]
                     status_options = ["Agendado", "Em Campo", "Aguardando Peças", "Concluído", "Cancelado"]
-                    new_status = st.selectbox("🔄 Novo Status:", 
+                    new_status = st.selectbox("🔄 Novo Status:",
                                               status_options,
                                               index=status_options.index(current_status) if current_status in status_options else 0)
-                    
+
                     completion_data = {}
                     if new_status == "Concluído":
                         st.markdown("**📊 Dados de Conclusão:**")
@@ -214,7 +213,7 @@ def show_manage_orders(manager):
                             st.markdown(f"**✅ Concluído em:** {selected_order_data['completed_at']}")
                         if selected_order_data.get('customer_satisfaction'):
                             satisfaction = selected_order_data['customer_satisfaction']
-                            stars = "⭐" * satisfaction
+                            stars = "⭐" * int(satisfaction)
                             st.markdown(f"**😊 Satisfação:** {satisfaction}/5 {stars}")
 
     else:
