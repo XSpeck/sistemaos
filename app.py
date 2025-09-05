@@ -839,7 +839,7 @@ def show_manage_orders(manager):
                     detail_display = st.selectbox("Selecionar OS:", detail_options, key="detail_list")
                     # Extrai o número da OS
                     os_number = detail_display.split(" - ")[0].split(" ")[-1]
-    
+    id = df[df["OS"] == detail_order_row.split(" - ")[0]]["ID"].iloc[0]
                 
                 # Busca dados completos da ordem
                 orders = manager.get_all_orders()
@@ -882,7 +882,7 @@ def show_manage_orders(manager):
                         if selected_order_data.get('observations'):
                             st.markdown(f"**📋 Observações:** {selected_order_data['observations']}")
     else:
-        st.info("📝 Nenhuma OS encontrada com os filtros aplicados")
+        st.info("📝 Nenhuma OS encontrada com os filtros aplicados")id = df[df["OS"] == os_number]["ID"].iloc[0]
             
             elif detail_search_method == "🎯 Busca Rápida":
                 # Busca com filtro dinâmico
@@ -1002,7 +1002,7 @@ def show_manage_orders(manager):
                                 stars = "⭐" * satisfaction
                                 st.markdown(f"**😊 Satisfação:** {satisfaction}/5 {stars}")
     else:
-        st.info("📝 Nenhuma OS encontrada no sistema")
+        st.info("📝 Nenhuma OS encontrada no sistema")id = df[df["OS"] == detail_order_row.split(" - ")[0]]["ID"].iloc[0]
                 
                 # Busca dados completos da ordem
                 orders = manager.get_all_orders()
