@@ -142,6 +142,7 @@ def show_manage_orders(manager):
                         st.error("❌ Erro ao atualizar status")
 
                 # Botão para excluir OS com confirmação extra
+                st.markdown("---")
                 confirm_delete = st.checkbox("Confirmo que desejo excluir esta OS permanentemente.", value=False)
                 if st.button("🗑️ Excluir OS Selecionada", type="secondary", use_container_width=True):
                     if confirm_delete:
@@ -245,11 +246,11 @@ def show_manage_orders(manager):
                         st.markdown(f"**😊 Satisfação:** {satisfaction}/5 {stars}")
 
 
-# Adicione esse método ao seu manager:
+# No seu manager (Supabase):
 # def delete_order(self, order_id):
 #     try:
 #         result = self.supabase.table('service_orders').delete().eq('id', order_id).execute()
-#         return result
+#         return bool(result.data)
 #     except Exception as e:
-#         st.error(f"Erro ao excluir OS: {e}")
-#         return None
+#         print(f"Erro ao excluir OS: {e}")
+#         return False
