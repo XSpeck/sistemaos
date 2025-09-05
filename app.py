@@ -841,9 +841,9 @@ def show_manage_orders(manager):
                     os_number = detail_display.split(" - ")[0].split(" ")[-1]
     id = df[df["OS"] == detail_order_row.split(" - ")[0]]["ID"].iloc[0]
                 
-                # Busca dados completos da ordem
-                orders = manager.get_all_orders()
-                selected_order_data = next((o for o in orders if o["id"] == detail_order_id), None)
+                    # Busca dados completos da ordem
+                    orders = manager.get_all_orders()
+                    selected_order_data = next((o for o in orders if o["id"] == detail_order_id), None)
                 
                 if selected_order_data:
                     clients = manager.get_all_clients()
@@ -1699,3 +1699,4 @@ if __name__ == "__main__":
     # Mostrar schema do banco (apenas para desenvolvimento)
     if st.sidebar.checkbox("🗄️ Mostrar Schema SQL"):
         show_database_schema()
+
