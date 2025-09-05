@@ -752,15 +752,15 @@ def show_manage_orders(manager):
                     
                     with st.expander(f"📋 Detalhes - {selected_order_data['order_number']}", expanded=True):
                         st.markdown(f"""
-                        **🏠 Cliente:** {client.get('name', 'N/A')}
-                        **📍 Endereço:** {client.get('address', 'N/A')}
+                        **🏠 Cliente:** {client.get('name', 'N/A')} \\
+                        **📍 Endereço:** {client.get('address', 'N/A')} \\
                         **🌐 CTO:** {client.get('cto', 'N/A')}
-                        **📊 Plano:** {client.get('plan', 'N/A')}
-                        **🔧 Serviço:** {service.get('name', 'N/A')}
-                        **👨‍🔧 Técnico:** {technician.get('name', 'N/A')}
-                        **🌍 Região:** {technician.get('region', 'N/A')}
+                        **📊 Plano:** {client.get('plan', 'N/A')} \\
+                        **🔧 Serviço:** {service.get('name', 'N/A')} \\
+                        **👨‍🔧 Técnico:** {technician.get('name', 'N/A')} \\
+                        **🌍 Região:** {technician.get('region', 'N/A')} \\
                         **📅 Data:** {selected_order_data.get('scheduled_date', 'N/A')}
-                        **🕐 Hora:** {selected_order_data.get('scheduled_time', 'N/A')}
+                        **🕐 Hora:** {selected_order_data.get('scheduled_time', 'N/A')} \\
                         **⚡ Prioridade:** {selected_order_data.get('priority', 'N/A')}
                         **📊 Status:** {selected_order_data.get('status', 'N/A')}
                         **💰 Valor:** R$ {selected_order_data.get('estimated_cost', 0):.2f}
@@ -1432,3 +1432,4 @@ if __name__ == "__main__":
     # Mostrar schema do banco (apenas para desenvolvimento)
     if st.sidebar.checkbox("🗄️ Mostrar Schema SQL"):
         show_database_schema()
+
