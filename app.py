@@ -882,7 +882,7 @@ def show_manage_orders(manager):
                         if selected_order_data.get('observations'):
                             st.markdown(f"**📋 Observações:** {selected_order_data['observations']}")
     else:
-        st.info("📝 Nenhuma OS encontrada com os filtros aplicados")id = df[df["OS"] == os_number]["ID"].iloc[0]
+        st.info("📝 Nenhuma OS encontrada com os filtros aplicados")
                 
         elif detail_search_method == "🎯 Busca Rápida":
             # Busca com filtro dinâmico
@@ -1699,5 +1699,6 @@ if __name__ == "__main__":
     # Mostrar schema do banco (apenas para desenvolvimento)
     if st.sidebar.checkbox("🗄️ Mostrar Schema SQL"):
         show_database_schema()
+
 
 
