@@ -7,6 +7,7 @@ import uuid
 from typing import Dict, List, Optional
 import plotly.express as px
 import plotly.graph_objects as go
+from supabase import create_client, Client
 
 # Configurações da página
 st.set_page_config(
@@ -15,116 +16,226 @@ st.set_page_config(
     layout="wide"
 )
 
-# Classe para gerenciar ordens de serviço de fibra óptica
+# Configuração do Supabase
+@st.cache_resource
+def init_supabase():
+    """Inicializa conexão com Supabase"""
+    try:
+        supabase_url = st.secrets["SUPABASE_URL"]
+        supabase_key = st.secrets["SUPABASE_KEY"]
+        supabase: Client = create_client(supabase_url, supabase_key)
+        return supabase
+    except Exception as e:
+        st.error(f"Erro ao conectar com Supabase: {e}")
+        return None
+
+# Classe para gerenciar ordens de serviço de fibra óptica com Supabase
 class FiberOpticServiceManager:
     def __init__(self):
-        self.initialize_session_state()
+        self.supabase = init_supabase()
+        if self.supabase:
+            self.initialize_database()
     
-    def initialize_session_state(self):
-        """Inicializa o estado da sessão com dados específicos de fibra óptica"""
-        if 'service_orders' not in st.session_state:
-            st.session_state.service_orders = []
+    def initialize_database(self):
+        """Inicializa dados padrão no banco se necessário"""
+        try:
+            # Verifica se já existem dados
+            clients_result = self.supabase.table('clients').select('*').limit(1).execute()
+            
+            if not clients_result.data:
+                # Insere clientes padrão
+                default_clients = [
+                    {
+                        "name": "João Silva",
+                        "phone": "(11) 99999-1111",
+                        "email": "joao@email.com",
+                        "address": "Rua das Flores, 123 - Vila Madalena",
+                        "cto": "CTO-001",
+                        "plan": "100MB"
+                    },
+                    {
+                        "name": "Empresa ABC Ltda",
+                        "phone": "(11) 99999-2222",
+                        "email": "contato@abc.com",
+                        "address": "Av. Paulista, 1000 - Bela Vista",
+                        "cto": "CTO-002",
+                        "plan": "500MB"
+                    },
+                    {
+                        "name": "Maria Santos",
+                        "phone": "(11) 99999-3333",
+                        "email": "maria@email.com",
+                        "address": "Rua Augusta, 456 - Consolação",
+                        "cto": "CTO-003",
+                        "plan": "200MB"
+                    }
+                ]
+                self.supabase.table('clients').insert(default_clients).execute()
+            
+            # Verifica e insere serviços padrão
+            services_result = self.supabase.table('services').select('*').limit(1).execute()
+            if not services_result.data:
+                default_services = [
+                    {"name": "Instalação Residencial", "price": 0.00, "duration": 3, "type": "Instalação"},
+                    {"name": "Instalação Empresarial", "price": 0.00, "duration": 4, "type": "Instalação"},
+                    {"name": "Reparo de Cabo Rompido", "price": 150.00, "duration": 2, "type": "Reparo"},
+                    {"name": "Troca de Equipamento ONT", "price": 80.00, "duration": 1, "type": "Manutenção"},
+                    {"name": "Mudança de Endereço", "price": 100.00, "duration": 3, "type": "Mudança"},
+                    {"name": "Upgrade de Plano", "price": 0.00, "duration": 1, "type": "Upgrade"},
+                    {"name": "Reparo em CTO", "price": 200.00, "duration": 4, "type": "Reparo"},
+                    {"name": "Verificação de Sinal", "price": 50.00, "duration": 1, "type": "Diagnóstico"},
+                    {"name": "Emenda de Fibra", "price": 120.00, "duration": 2, "type": "Reparo"},
+                    {"name": "Cancelamento", "price": 0.00, "duration": 1, "type": "Cancelamento"}
+                ]
+                self.supabase.table('services').insert(default_services).execute()
+            
+            # Verifica e insere técnicos padrão
+            technicians_result = self.supabase.table('technicians').select('*').limit(1).execute()
+            if not technicians_result.data:
+                default_technicians = [
+                    {"name": "Carlos Fibra", "specialty": "Instalação", "region": "Zona Sul", "level": "Sênior"},
+                    {"name": "Ana Conecta", "specialty": "Reparo", "region": "Centro", "level": "Pleno"},
+                    {"name": "Roberto Rede", "specialty": "Manutenção", "region": "Zona Norte", "level": "Júnior"},
+                    {"name": "Mariana Link", "specialty": "Instalação", "region": "Zona Oeste", "level": "Sênior"},
+                    {"name": "Pedro Optical", "specialty": "Reparo", "region": "Zona Leste", "level": "Pleno"}
+                ]
+                self.supabase.table('technicians').insert(default_technicians).execute()
+            
+            # Verifica e insere equipamentos padrão
+            equipment_result = self.supabase.table('equipment').select('*').limit(1).execute()
+            if not equipment_result.data:
+                default_equipment = [
+                    {"name": "ONT Huawei HG8010H", "type": "ONT", "price": 150.00},
+                    {"name": "ONT Nokia G-010G-A", "type": "ONT", "price": 120.00},
+                    {"name": "Router Wi-Fi AC1200", "type": "Router", "price": 200.00},
+                    {"name": "Splitter 1x8", "type": "Splitter", "price": 25.00},
+                    {"name": "Cabo Drop 100m", "type": "Cabo", "price": 80.00},
+                    {"name": "Conector SC/APC", "type": "Conector", "price": 5.00},
+                    {"name": "Cordão Óptico 3m", "type": "Cordão", "price": 15.00}
+                ]
+                self.supabase.table('equipment').insert(default_equipment).execute()
         
-        if 'clients' not in st.session_state:
-            st.session_state.clients = [
-                {"id": "1", "name": "João Silva", "phone": "(11) 99999-1111", "email": "joao@email.com", 
-                 "address": "Rua das Flores, 123 - Vila Madalena", "cto": "CTO-001", "plan": "100MB"},
-                {"id": "2", "name": "Empresa ABC Ltda", "phone": "(11) 99999-2222", "email": "contato@abc.com", 
-                 "address": "Av. Paulista, 1000 - Bela Vista", "cto": "CTO-002", "plan": "500MB"},
-                {"id": "3", "name": "Maria Santos", "phone": "(11) 99999-3333", "email": "maria@email.com", 
-                 "address": "Rua Augusta, 456 - Consolação", "cto": "CTO-003", "plan": "200MB"}
-            ]
-        
-        if 'services' not in st.session_state:
-            st.session_state.services = [
-                {"id": "1", "name": "Instalação Residencial", "price": 0.00, "duration": 3, "type": "Instalação"},
-                {"id": "2", "name": "Instalação Empresarial", "price": 0.00, "duration": 4, "type": "Instalação"},
-                {"id": "3", "name": "Reparo de Cabo Rompido", "price": 150.00, "duration": 2, "type": "Reparo"},
-                {"id": "4", "name": "Troca de Equipamento ONT", "price": 80.00, "duration": 1, "type": "Manutenção"},
-                {"id": "5", "name": "Mudança de Endereço", "price": 100.00, "duration": 3, "type": "Mudança"},
-                {"id": "6", "name": "Upgrade de Plano", "price": 0.00, "duration": 1, "type": "Upgrade"},
-                {"id": "7", "name": "Reparo em CTO", "price": 200.00, "duration": 4, "type": "Reparo"},
-                {"id": "8", "name": "Verificação de Sinal", "price": 50.00, "duration": 1, "type": "Diagnóstico"},
-                {"id": "9", "name": "Emenda de Fibra", "price": 120.00, "duration": 2, "type": "Reparo"},
-                {"id": "10", "name": "Cancelamento", "price": 0.00, "duration": 1, "type": "Cancelamento"}
-            ]
-        
-        if 'technicians' not in st.session_state:
-            st.session_state.technicians = [
-                {"id": "1", "name": "Carlos Fibra", "specialty": "Instalação", "region": "Zona Sul", "level": "Sênior"},
-                {"id": "2", "name": "Ana Conecta", "specialty": "Reparo", "region": "Centro", "level": "Pleno"},
-                {"id": "3", "name": "Roberto Rede", "specialty": "Manutenção", "region": "Zona Norte", "level": "Júnior"},
-                {"id": "4", "name": "Mariana Link", "specialty": "Instalação", "region": "Zona Oeste", "level": "Sênior"},
-                {"id": "5", "name": "Pedro Optical", "specialty": "Reparo", "region": "Zona Leste", "level": "Pleno"}
-            ]
-        
-        if 'equipment' not in st.session_state:
-            st.session_state.equipment = [
-                {"id": "1", "name": "ONT Huawei HG8010H", "type": "ONT", "price": 150.00},
-                {"id": "2", "name": "ONT Nokia G-010G-A", "type": "ONT", "price": 120.00},
-                {"id": "3", "name": "Router Wi-Fi AC1200", "type": "Router", "price": 200.00},
-                {"id": "4", "name": "Splitter 1x8", "type": "Splitter", "price": 25.00},
-                {"id": "5", "name": "Cabo Drop 100m", "type": "Cabo", "price": 80.00},
-                {"id": "6", "name": "Conector SC/APC", "type": "Conector", "price": 5.00},
-                {"id": "7", "name": "Cordão Óptico 3m", "type": "Cordão", "price": 15.00}
-            ]
+        except Exception as e:
+            st.error(f"Erro ao inicializar dados: {e}")
     
     def generate_id(self):
         """Gera um ID único"""
         return str(uuid.uuid4())[:8].upper()
     
     def create_service_order(self, order_data: Dict):
-        """Cria uma nova ordem de serviço"""
-        order = {
-            "id": f"OS{self.generate_id()}",
-            "client_id": order_data["client_id"],
-            "service_id": order_data["service_id"],
-            "technician_id": order_data["technician_id"],
-            "scheduled_date": order_data["scheduled_date"].strftime("%Y-%m-%d"),
-            "scheduled_time": order_data["scheduled_time"].strftime("%H:%M"),
-            "description": order_data["description"],
-            "status": "Agendado",
-            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "priority": order_data["priority"],
-            "estimated_cost": order_data["estimated_cost"],
-            "equipment_used": order_data.get("equipment_used", []),
-            "signal_level": order_data.get("signal_level", ""),
-            "observations": order_data.get("observations", ""),
-            "region": order_data.get("region", ""),
-            "cto_reference": order_data.get("cto_reference", "")
-        }
-        st.session_state.service_orders.append(order)
-        return order
+        """Cria uma nova ordem de serviço no Supabase"""
+        try:
+            order = {
+                "order_number": f"OS{self.generate_id()}",
+                "client_id": order_data["client_id"],
+                "service_id": order_data["service_id"],
+                "technician_id": order_data["technician_id"],
+                "scheduled_date": order_data["scheduled_date"].strftime("%Y-%m-%d"),
+                "scheduled_time": order_data["scheduled_time"].strftime("%H:%M"),
+                "description": order_data["description"],
+                "status": "Agendado",
+                "priority": order_data["priority"],
+                "estimated_cost": order_data["estimated_cost"],
+                "equipment_used": order_data.get("equipment_used", []),
+                "signal_level": order_data.get("signal_level", ""),
+                "observations": order_data.get("observations", ""),
+                "cto_reference": order_data.get("cto_reference", "")
+            }
+            
+            result = self.supabase.table('service_orders').insert(order).execute()
+            if result.data:
+                return result.data[0]
+            else:
+                st.error("Erro ao criar ordem de serviço")
+                return None
+        except Exception as e:
+            st.error(f"Erro ao criar OS: {e}")
+            return None
     
-    def update_order_status(self, order_id: str, new_status: str, completion_data: Dict = None):
-        """Atualiza o status de uma ordem"""
-        for order in st.session_state.service_orders:
-            if order["id"] == order_id:
-                order["status"] = new_status
-                if new_status == "Concluído" and completion_data:
-                    order["completed_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    order["signal_level"] = completion_data.get("signal_level", "")
-                    order["equipment_used"] = completion_data.get("equipment_used", [])
-                    order["observations"] = completion_data.get("observations", "")
-                    order["customer_satisfaction"] = completion_data.get("customer_satisfaction", "")
-                break
+    def update_order_status(self, order_id: int, new_status: str, completion_data: Dict = None):
+        """Atualiza o status de uma ordem no Supabase"""
+        try:
+            update_data = {"status": new_status}
+            
+            if new_status == "Concluído" and completion_data:
+                update_data.update({
+                    "completed_at": datetime.now().isoformat(),
+                    "signal_level": completion_data.get("signal_level", ""),
+                    "equipment_used": completion_data.get("equipment_used", []),
+                    "observations": completion_data.get("observations", ""),
+                    "customer_satisfaction": completion_data.get("customer_satisfaction", "")
+                })
+            
+            result = self.supabase.table('service_orders').update(update_data).eq('id', order_id).execute()
+            return result.data
+        except Exception as e:
+            st.error(f"Erro ao atualizar status: {e}")
+            return None
+    
+    def get_all_clients(self):
+        """Busca todos os clientes"""
+        try:
+            result = self.supabase.table('clients').select('*').execute()
+            return result.data
+        except Exception as e:
+            st.error(f"Erro ao buscar clientes: {e}")
+            return []
+    
+    def get_all_services(self):
+        """Busca todos os serviços"""
+        try:
+            result = self.supabase.table('services').select('*').execute()
+            return result.data
+        except Exception as e:
+            st.error(f"Erro ao buscar serviços: {e}")
+            return []
+    
+    def get_all_technicians(self):
+        """Busca todos os técnicos"""
+        try:
+            result = self.supabase.table('technicians').select('*').execute()
+            return result.data
+        except Exception as e:
+            st.error(f"Erro ao buscar técnicos: {e}")
+            return []
+    
+    def get_all_equipment(self):
+        """Busca todos os equipamentos"""
+        try:
+            result = self.supabase.table('equipment').select('*').execute()
+            return result.data
+        except Exception as e:
+            st.error(f"Erro ao buscar equipamentos: {e}")
+            return []
+    
+    def get_all_orders(self):
+        """Busca todas as ordens de serviço"""
+        try:
+            result = self.supabase.table('service_orders').select('*').execute()
+            return result.data
+        except Exception as e:
+            st.error(f"Erro ao buscar ordens: {e}")
+            return []
     
     def get_orders_dataframe(self):
         """Retorna DataFrame com as ordens enriquecidas"""
-        if not st.session_state.service_orders:
+        orders = self.get_all_orders()
+        if not orders:
             return pd.DataFrame()
         
-        orders = []
-        for order in st.session_state.service_orders:
-            # Busca informações do cliente
-            client = next((c for c in st.session_state.clients if c["id"] == order["client_id"]), {})
-            # Busca informações do serviço
-            service = next((s for s in st.session_state.services if s["id"] == order["service_id"]), {})
-            # Busca informações do técnico
-            technician = next((t for t in st.session_state.technicians if t["id"] == order["technician_id"]), {})
+        clients = {c['id']: c for c in self.get_all_clients()}
+        services = {s['id']: s for s in self.get_all_services()}
+        technicians = {t['id']: t for t in self.get_all_technicians()}
+        
+        orders_list = []
+        for order in orders:
+            client = clients.get(order["client_id"], {})
+            service = services.get(order["service_id"], {})
+            technician = technicians.get(order["technician_id"], {})
             
-            orders.append({
-                "OS": order["id"],
+            orders_list.append({
+                "ID": order["id"],
+                "OS": order["order_number"],
                 "Cliente": client.get("name", "N/A"),
                 "Serviço": service.get("name", "N/A"),
                 "Tipo": service.get("type", "N/A"),
@@ -140,7 +251,43 @@ class FiberOpticServiceManager:
                 "Sinal (dBm)": order.get("signal_level", "-")
             })
         
-        return pd.DataFrame(orders)
+        return pd.DataFrame(orders_list)
+    
+    def add_client(self, client_data: Dict):
+        """Adiciona um novo cliente"""
+        try:
+            result = self.supabase.table('clients').insert(client_data).execute()
+            return result.data
+        except Exception as e:
+            st.error(f"Erro ao adicionar cliente: {e}")
+            return None
+    
+    def add_service(self, service_data: Dict):
+        """Adiciona um novo serviço"""
+        try:
+            result = self.supabase.table('services').insert(service_data).execute()
+            return result.data
+        except Exception as e:
+            st.error(f"Erro ao adicionar serviço: {e}")
+            return None
+    
+    def add_technician(self, technician_data: Dict):
+        """Adiciona um novo técnico"""
+        try:
+            result = self.supabase.table('technicians').insert(technician_data).execute()
+            return result.data
+        except Exception as e:
+            st.error(f"Erro ao adicionar técnico: {e}")
+            return None
+    
+    def add_equipment(self, equipment_data: Dict):
+        """Adiciona um novo equipamento"""
+        try:
+            result = self.supabase.table('equipment').insert(equipment_data).execute()
+            return result.data
+        except Exception as e:
+            st.error(f"Erro ao adicionar equipamento: {e}")
+            return None
 
 # Classe para integração com Google Agenda (específica para fibra óptica)
 class FiberOpticCalendarIntegration:
@@ -172,6 +319,10 @@ def main():
     # Inicializa o gerenciador
     manager = FiberOpticServiceManager()
     
+    if not manager.supabase:
+        st.error("❌ Não foi possível conectar ao banco de dados. Verifique as configurações do Supabase.")
+        return
+    
     # Sidebar para navegação
     st.sidebar.title("🔧 Navegação")
     st.sidebar.markdown("**Fibra Óptica OS**")
@@ -182,10 +333,14 @@ def main():
     
     # Status do sistema
     with st.sidebar.expander("ℹ️ Status do Sistema"):
-        total_os = len(st.session_state.service_orders)
-        pending_os = len([o for o in st.session_state.service_orders if o["status"] == "Agendado"])
+        orders = manager.get_all_orders()
+        total_os = len(orders)
+        pending_os = len([o for o in orders if o["status"] == "Agendado"])
         st.metric("Total OS", total_os)
         st.metric("OS Pendentes", pending_os)
+        
+        # Status da conexão
+        st.success("✅ Conectado ao Supabase")
     
     if page == "📊 Dashboard":
         show_dashboard(manager)
@@ -204,8 +359,12 @@ def show_dashboard(manager):
     """Dashboard específico para fibra óptica"""
     st.header("📊 Dashboard - Fibra Óptica")
     
+    # Busca dados do banco
+    orders = manager.get_all_orders()
+    services = manager.get_all_services()
+    technicians = manager.get_all_technicians()
+    
     # Métricas principais
-    orders = st.session_state.service_orders
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
@@ -225,7 +384,7 @@ def show_dashboard(manager):
         st.metric("Concluídas", completed_orders)
     
     with col5:
-        installations = len([o for o in orders if any(s["id"] == o["service_id"] and s["type"] == "Instalação" for s in st.session_state.services)])
+        installations = len([o for o in orders if any(s["id"] == o["service_id"] and s["type"] == "Instalação" for s in services)])
         st.metric("Instalações", installations)
     
     # Métricas de receita e SLA
@@ -256,7 +415,7 @@ def show_dashboard(manager):
             st.subheader("📊 OS por Tipo de Serviço")
             service_types = {}
             for order in orders:
-                service = next((s for s in st.session_state.services if s["id"] == order["service_id"]), {})
+                service = next((s for s in services if s["id"] == order["service_id"]), {})
                 service_type = service.get("type", "Outros")
                 service_types[service_type] = service_types.get(service_type, 0) + 1
             
@@ -273,7 +432,7 @@ def show_dashboard(manager):
             st.subheader("🌍 OS por Região")
             region_counts = {}
             for order in orders:
-                technician = next((t for t in st.session_state.technicians if t["id"] == order["technician_id"]), {})
+                technician = next((t for t in technicians if t["id"] == order["technician_id"]), {})
                 region = technician.get("region", "N/A")
                 region_counts[region] = region_counts.get(region, 0) + 1
             
@@ -306,13 +465,22 @@ def show_new_order(manager):
     """Formulário para criar nova OS de fibra óptica"""
     st.header("📝 Nova Ordem de Serviço - Fibra Óptica")
     
+    # Busca dados do banco
+    clients = manager.get_all_clients()
+    services = manager.get_all_services()
+    technicians = manager.get_all_technicians()
+    equipment = manager.get_all_equipment()
+    
+    if not all([clients, services, technicians]):
+        st.error("❌ Erro ao carregar dados do banco. Verifique a conexão.")
+        return
+    
     with st.form("new_fiber_order_form"):
         # Informações do cliente
         st.subheader("👤 Informações do Cliente")
         col1, col2 = st.columns(2)
         
         with col1:
-            clients = st.session_state.clients
             client_options = {f"{c['name']} - {c['cto']} ({c['plan']})": c['id'] for c in clients}
             selected_client = st.selectbox("🏠 Cliente", options=list(client_options.keys()))
             client_id = client_options[selected_client]
@@ -330,7 +498,6 @@ def show_new_order(manager):
         col1, col2 = st.columns(2)
         
         with col1:
-            services = st.session_state.services
             service_options = {f"{s['name']} ({s['type']}) - R$ {s['price']:.2f}": s['id'] for s in services}
             selected_service = st.selectbox("⚙️ Tipo de Serviço", options=list(service_options.keys()))
             service_id = service_options[selected_service]
@@ -338,7 +505,6 @@ def show_new_order(manager):
             service = next(s for s in services if s['id'] == service_id)
             
             # Técnico responsável (filtrado por tipo de serviço se possível)
-            technicians = st.session_state.technicians
             if service['type'] in ['Instalação', 'Reparo', 'Manutenção']:
                 filtered_techs = [t for t in technicians if service['type'].lower() in t['specialty'].lower()]
                 if not filtered_techs:
@@ -395,9 +561,11 @@ def show_new_order(manager):
         # Equipamentos (se aplicável)
         if service['type'] in ['Instalação', 'Manutenção', 'Reparo']:
             st.subheader("📦 Equipamentos Necessários")
-            equipment = st.session_state.equipment
-            equipment_options = [f"{e['name']} - R$ {e['price']:.2f}" for e in equipment]
-            selected_equipment = st.multiselect("Selecione os equipamentos", equipment_options)
+            if equipment:
+                equipment_options = [f"{e['name']} - R$ {e['price']:.2f}" for e in equipment]
+                selected_equipment = st.multiselect("Selecione os equipamentos", equipment_options)
+            else:
+                selected_equipment = []
         else:
             selected_equipment = []
         
@@ -440,55 +608,60 @@ def show_new_order(manager):
                 # Cria a ordem
                 new_order = manager.create_service_order(order_data)
                 
-                # Prepara dados para o Google Agenda
-                technician = next(t for t in technicians if t['id'] == technician_id)
-                calendar_data = {
-                    "id": new_order["id"],
-                    "client_name": client["name"],
-                    "client_email": client["email"],
-                    "address": client["address"],
-                    "cto": client["cto"],
-                    "plan": client["plan"],
-                    "service_name": service["name"],
-                    "service_type": service["type"],
-                    "technician_name": technician["name"],
-                    "region": technician["region"],
-                    "scheduled_date": scheduled_date.strftime("%Y-%m-%d"),
-                    "scheduled_time": scheduled_time.strftime("%H:%M"),
-                    "description": description,
-                    "duration": service.get("duration", 2)
-                }
-                
-                calendar_result = FiberOpticCalendarIntegration.create_calendar_event(calendar_data)
-                
-                st.success(f"✅ **Ordem de Serviço {new_order['id']} criada com sucesso!**")
-                
-                # Mostra resumo da OS criada
-                with st.expander("📋 Resumo da OS Criada", expanded=True):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.markdown(f"""
-                        **📋 OS:** {new_order['id']}
-                        **👤 Cliente:** {client['name']}
-                        **🏠 Endereço:** {client['address']}
-                        **🌐 CTO:** {client['cto']}
-                        **📊 Plano:** {client['plan']}
-                        """)
-                    with col2:
-                        st.markdown(f"""
-                        **🔧 Serviço:** {service['name']}
-                        **👨‍🔧 Técnico:** {technician['name']}
-                        **🌍 Região:** {technician['region']}
-                        **📅 Agendamento:** {scheduled_date.strftime('%d/%m/%Y')} às {scheduled_time.strftime('%H:%M')}
-                        **💰 Custo Total:** R$ {final_cost:.2f}
-                        """)
+                if new_order:
+                    # Prepara dados para o Google Agenda
+                    technician = next(t for t in technicians if t['id'] == technician_id)
+                    calendar_data = {
+                        "id": new_order["order_number"],
+                        "client_name": client["name"],
+                        "client_email": client["email"],
+                        "address": client["address"],
+                        "cto": client["cto"],
+                        "plan": client["plan"],
+                        "service_name": service["name"],
+                        "service_type": service["type"],
+                        "technician_name": technician["name"],
+                        "region": technician["region"],
+                        "scheduled_date": scheduled_date.strftime("%Y-%m-%d"),
+                        "scheduled_time": scheduled_time.strftime("%H:%M"),
+                        "description": description,
+                        "duration": service.get("duration", 2)
+                    }
                     
-                    if equipment_list:
-                        st.markdown(f"**📦 Equipamentos:** {', '.join(equipment_list)}")
-                
-                if calendar_result["status"] == "success":
-                    st.success("📅 Evento agendado no Google Agenda!")
-                
+                    calendar_result = FiberOpticCalendarIntegration.create_calendar_event(calendar_data)
+                    
+                    st.success(f"✅ **Ordem de Serviço {new_order['order_number']} criada com sucesso!**")
+                    
+                    # Mostra resumo da OS criada
+                    with st.expander("📋 Resumo da OS Criada", expanded=True):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.markdown(f"""
+                            **📋 OS:** {new_order['order_number']}
+                            **👤 Cliente:** {client['name']}
+                            **🏠 Endereço:** {client['address']}
+                            **🌐 CTO:** {client['cto']}
+                            **📊 Plano:** {client['plan']}
+                            """)
+                        with col2:
+                            st.markdown(f"""
+                            **🔧 Serviço:** {service['name']}
+                            **👨‍🔧 Técnico:** {technician['name']}
+                            **🌍 Região:** {technician['region']}
+                            **📅 Agendamento:** {scheduled_date.strftime('%d/%m/%Y')} às {scheduled_time.strftime('%H:%M')}
+                            **💰 Custo Total:** R$ {final_cost:.2f}
+                            """)
+                        
+                        if equipment_list:
+                            st.markdown(f"**📦 Equipamentos:** {', '.join(equipment_list)}")
+                    
+                    if calendar_result["status"] == "success":
+                        st.success("📅 Evento agendado no Google Agenda!")
+                    
+                    # Recarrega a página após 2 segundos
+                    st.balloons()
+                else:
+                    st.error("❌ Erro ao criar ordem de serviço")
             else:
                 st.error("⚠️ Por favor, preencha a descrição do serviço.")
 
@@ -530,7 +703,10 @@ def show_manage_orders(manager):
         with col1:
             st.subheader("📝 Atualizar Status da OS")
             if len(df) > 0:
-                selected_order = st.selectbox("Selecionar OS", df["OS"].tolist())
+                selected_order_row = st.selectbox("Selecionar OS", 
+                                                 [f"{row['OS']} - {row['Cliente']}" for _, row in df.iterrows()])
+                selected_order_id = df[df["OS"] == selected_order_row.split(" - ")[0]]["ID"].iloc[0]
+                
                 new_status = st.selectbox("Novo Status", ["Agendado", "Em Campo", "Aguardando Peças", "Concluído", "Cancelado"])
                 
                 # Se concluindo, pedir informações adicionais
@@ -545,23 +721,36 @@ def show_manage_orders(manager):
                                                                                    value=5)
                 
                 if st.button("🔄 Atualizar Status", type="primary"):
-                    manager.update_order_status(selected_order, new_status, completion_data if new_status == "Concluído" else None)
-                    st.success(f"✅ Status da OS {selected_order} atualizado para: **{new_status}**")
-                    st.rerun()
+                    result = manager.update_order_status(selected_order_id, new_status, 
+                                                       completion_data if new_status == "Concluído" else None)
+                    if result:
+                        st.success(f"✅ Status da OS atualizado para: **{new_status}**")
+                        st.rerun()
+                    else:
+                        st.error("❌ Erro ao atualizar status")
         
         with col2:
             st.subheader("🔍 Detalhes da OS")
             if len(df) > 0:
-                detail_order = st.selectbox("Ver Detalhes da OS", df["OS"].tolist(), key="detail_select")
+                detail_order_row = st.selectbox("Ver Detalhes da OS", 
+                                               [f"{row['OS']} - {row['Cliente']}" for _, row in df.iterrows()], 
+                                               key="detail_select")
+                detail_order_id = df[df["OS"] == detail_order_row.split(" - ")[0]]["ID"].iloc[0]
                 
-                # Encontra a ordem selecionada
-                selected_order_data = next((o for o in st.session_state.service_orders if o["id"] == detail_order), None)
+                # Busca dados completos da ordem
+                orders = manager.get_all_orders()
+                selected_order_data = next((o for o in orders if o["id"] == detail_order_id), None)
+                
                 if selected_order_data:
-                    client = next((c for c in st.session_state.clients if c["id"] == selected_order_data["client_id"]), {})
-                    service = next((s for s in st.session_state.services if s["id"] == selected_order_data["service_id"]), {})
-                    technician = next((t for t in st.session_state.technicians if t["id"] == selected_order_data["technician_id"]), {})
+                    clients = manager.get_all_clients()
+                    services = manager.get_all_services()
+                    technicians = manager.get_all_technicians()
                     
-                    with st.expander(f"📋 Detalhes - {detail_order}", expanded=True):
+                    client = next((c for c in clients if c["id"] == selected_order_data["client_id"]), {})
+                    service = next((s for s in services if s["id"] == selected_order_data["service_id"]), {})
+                    technician = next((t for t in technicians if t["id"] == selected_order_data["technician_id"]), {})
+                    
+                    with st.expander(f"📋 Detalhes - {selected_order_data['order_number']}", expanded=True):
                         st.markdown(f"""
                         **🏠 Cliente:** {client.get('name', 'N/A')}
                         **📍 Endereço:** {client.get('address', 'N/A')}
@@ -581,7 +770,8 @@ def show_manage_orders(manager):
                             st.markdown(f"**📶 Sinal:** {selected_order_data['signal_level']} dBm")
                         
                         if selected_order_data.get('equipment_used'):
-                            st.markdown(f"**📦 Equipamentos:** {', '.join(selected_order_data['equipment_used'])}")
+                            equipment_str = ', '.join(selected_order_data['equipment_used']) if isinstance(selected_order_data['equipment_used'], list) else selected_order_data['equipment_used']
+                            st.markdown(f"**📦 Equipamentos:** {equipment_str}")
                         
                         st.markdown(f"**📝 Descrição:** {selected_order_data.get('description', 'N/A')}")
                         
@@ -603,19 +793,24 @@ def show_calendar(manager):
     with col3:
         view_type = st.selectbox("🔍 Visualização", ["Por Região", "Por Tipo de Serviço", "Por Técnico"])
     
-    # Mostra agendamentos do mês
-    orders = st.session_state.service_orders
+    # Busca dados do banco
+    orders = manager.get_all_orders()
+    clients = {c['id']: c for c in manager.get_all_clients()}
+    services = {s['id']: s for s in manager.get_all_services()}
+    technicians = {t['id']: t for t in manager.get_all_technicians()}
+    
+    # Filtra ordens do mês selecionado
     month_orders = []
     
     for order in orders:
         order_date = datetime.strptime(order["scheduled_date"], "%Y-%m-%d")
         if order_date.month == selected_month and order_date.year == selected_year:
-            client = next((c for c in st.session_state.clients if c["id"] == order["client_id"]), {})
-            service = next((s for s in st.session_state.services if s["id"] == order["service_id"]), {})
-            technician = next((t for t in st.session_state.technicians if t["id"] == order["technician_id"]), {})
+            client = clients.get(order["client_id"], {})
+            service = services.get(order["service_id"], {})
+            technician = technicians.get(order["technician_id"], {})
             
             month_orders.append({
-                "OS": order["id"],
+                "OS": order["order_number"],
                 "Data": order["scheduled_date"],
                 "Hora": order["scheduled_time"],
                 "Cliente": client.get("name", "N/A"),
@@ -702,7 +897,9 @@ def show_reports(manager):
     """Relatórios específicos para fibra óptica"""
     st.header("📈 Relatórios - Fibra Óptica")
     
-    orders = st.session_state.service_orders
+    orders = manager.get_all_orders()
+    services = manager.get_all_services()
+    technicians = manager.get_all_technicians()
     
     if orders:
         # Seletor de período para relatórios
@@ -740,14 +937,14 @@ def show_reports(manager):
             with col4:
                 installations_period = len([o for o in period_orders 
                                           if any(s["id"] == o["service_id"] and s["type"] == "Instalação" 
-                                               for s in st.session_state.services)])
+                                               for s in services)])
                 st.metric("Instalações", installations_period)
             
             # Relatório por tipo de serviço
             st.subheader("📋 Relatório por Tipo de Serviço")
             service_analysis = {}
             for order in period_orders:
-                service = next((s for s in st.session_state.services if s["id"] == order["service_id"]), {})
+                service = next((s for s in services if s["id"] == order["service_id"]), {})
                 service_type = service.get("type", "Outros")
                 
                 if service_type not in service_analysis:
@@ -781,7 +978,7 @@ def show_reports(manager):
             tech_analysis = {}
             for order in period_orders:
                 tech_id = order["technician_id"]
-                technician = next((t for t in st.session_state.technicians if t["id"] == tech_id), {})
+                technician = next((t for t in technicians if t["id"] == tech_id), {})
                 tech_name = technician.get("name", "N/A")
                 region = technician.get("region", "N/A")
                 
@@ -797,7 +994,7 @@ def show_reports(manager):
                     tech_analysis[tech_id]["receita"] += order["estimated_cost"]
                 
                 # Conta tipos específicos
-                service = next((s for s in st.session_state.services if s["id"] == order["service_id"]), {})
+                service = next((s for s in services if s["id"] == order["service_id"]), {})
                 if service.get("type") == "Instalação":
                     tech_analysis[tech_id]["instalacoes"] += 1
                 elif service.get("type") == "Reparo":
@@ -829,8 +1026,8 @@ def show_reports(manager):
                 # Gráfico de instalações vs reparos por região
                 region_analysis = {}
                 for order in period_orders:
-                    tech = next((t for t in st.session_state.technicians if t["id"] == order["technician_id"]), {})
-                    service = next((s for s in st.session_state.services if s["id"] == order["service_id"]), {})
+                    tech = next((t for t in technicians if t["id"] == order["technician_id"]), {})
+                    service = next((s for s in services if s["id"] == order["service_id"]), {})
                     region = tech.get("region", "N/A")
                     service_type = service.get("type", "Outros")
                     
@@ -867,26 +1064,6 @@ def show_reports(manager):
                     fig.update_layout(title="Evolução das OS no Período",
                                     xaxis_title="Data", yaxis_title="Número de OS")
                     st.plotly_chart(fig, use_container_width=True)
-            
-            # Relatório de SLA e qualidade
-            st.subheader("📊 Indicadores de SLA e Qualidade")
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                # Simular dados de SLA
-                on_time_completion = 85.5
-                st.metric("SLA Cumprimento", f"{on_time_completion:.1f}%", delta="3.2%")
-            
-            with col2:
-                # Simular satisfação do cliente
-                avg_satisfaction = 4.7
-                st.metric("Satisfação Média", f"{avg_satisfaction:.1f}/5.0", delta="0.2")
-            
-            with col3:
-                # Tempo médio de resolução
-                avg_resolution_time = 2.3
-                st.metric("Tempo Médio (h)", f"{avg_resolution_time:.1f}h", delta="-0.5h")
-            
         else:
             st.info("📅 Nenhuma OS encontrada no período selecionado")
     else:
@@ -917,7 +1094,6 @@ def show_settings(manager):
                 if st.form_submit_button("➕ Adicionar Cliente"):
                     if name and phone and address:
                         new_client = {
-                            "id": manager.generate_id(),
                             "name": name,
                             "phone": phone,
                             "email": email,
@@ -925,13 +1101,17 @@ def show_settings(manager):
                             "cto": cto,
                             "plan": plan
                         }
-                        st.session_state.clients.append(new_client)
-                        st.success("✅ Cliente adicionado com sucesso!")
-                        st.rerun()
+                        result = manager.add_client(new_client)
+                        if result:
+                            st.success("✅ Cliente adicionado com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro ao adicionar cliente")
         
         # Lista de clientes
-        if st.session_state.clients:
-            clients_df = pd.DataFrame(st.session_state.clients)
+        clients = manager.get_all_clients()
+        if clients:
+            clients_df = pd.DataFrame(clients)
             clients_df = clients_df[["name", "phone", "email", "cto", "plan"]]
             clients_df.columns = ["Nome", "Telefone", "Email", "CTO", "Plano"]
             st.dataframe(clients_df, use_container_width=True)
@@ -954,19 +1134,22 @@ def show_settings(manager):
                 if st.form_submit_button("➕ Adicionar Serviço"):
                     if name:
                         new_service = {
-                            "id": manager.generate_id(),
                             "name": name,
                             "type": service_type,
                             "price": price,
                             "duration": duration
                         }
-                        st.session_state.services.append(new_service)
-                        st.success("✅ Serviço adicionado com sucesso!")
-                        st.rerun()
+                        result = manager.add_service(new_service)
+                        if result:
+                            st.success("✅ Serviço adicionado com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro ao adicionar serviço")
         
         # Lista de serviços
-        if st.session_state.services:
-            services_df = pd.DataFrame(st.session_state.services)
+        services = manager.get_all_services()
+        if services:
+            services_df = pd.DataFrame(services)
             services_df = services_df[["name", "type", "price", "duration"]]
             services_df.columns = ["Nome", "Categoria", "Preço (R$)", "Duração (h)"]
             st.dataframe(services_df, use_container_width=True)
@@ -990,19 +1173,22 @@ def show_settings(manager):
                 if st.form_submit_button("➕ Adicionar Técnico"):
                     if name:
                         new_tech = {
-                            "id": manager.generate_id(),
                             "name": name,
                             "specialty": specialty,
                             "region": region,
                             "level": level
                         }
-                        st.session_state.technicians.append(new_tech)
-                        st.success("✅ Técnico adicionado com sucesso!")
-                        st.rerun()
+                        result = manager.add_technician(new_tech)
+                        if result:
+                            st.success("✅ Técnico adicionado com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro ao adicionar técnico")
         
         # Lista de técnicos
-        if st.session_state.technicians:
-            techs_df = pd.DataFrame(st.session_state.technicians)
+        technicians = manager.get_all_technicians()
+        if technicians:
+            techs_df = pd.DataFrame(technicians)
             techs_df = techs_df[["name", "specialty", "region", "level"]]
             techs_df.columns = ["Nome", "Especialidade", "Região", "Nível"]
             st.dataframe(techs_df, use_container_width=True)
@@ -1024,18 +1210,21 @@ def show_settings(manager):
                 if st.form_submit_button("➕ Adicionar Equipamento"):
                     if name:
                         new_equipment = {
-                            "id": manager.generate_id(),
                             "name": name,
                             "type": equipment_type,
                             "price": price
                         }
-                        st.session_state.equipment.append(new_equipment)
-                        st.success("✅ Equipamento adicionado com sucesso!")
-                        st.rerun()
+                        result = manager.add_equipment(new_equipment)
+                        if result:
+                            st.success("✅ Equipamento adicionado com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro ao adicionar equipamento")
         
         # Lista de equipamentos
-        if st.session_state.equipment:
-            equipment_df = pd.DataFrame(st.session_state.equipment)
+        equipment = manager.get_all_equipment()
+        if equipment:
+            equipment_df = pd.DataFrame(equipment)
             equipment_df = equipment_df[["name", "type", "price"]]
             equipment_df.columns = ["Nome", "Tipo", "Preço (R$)"]
             st.dataframe(equipment_df, use_container_width=True)
@@ -1044,18 +1233,122 @@ def show_settings(manager):
     st.markdown("---")
     st.subheader("🔧 Configurações do Sistema")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
+    
     with col1:
-        if st.button("🗑️ Limpar Todas as OS", type="secondary"):
-            if st.button("⚠️ Confirmar Limpeza", type="secondary"):
-                st.session_state.service_orders = []
-                st.success("✅ Todas as OS foram removidas!")
-                st.rerun()
+        st.info("🗄️ **Banco de Dados**\nConectado ao Supabase")
+        if st.button("🔄 Recarregar Dados", help="Recarrega todos os dados do banco"):
+            st.rerun()
     
     with col2:
-        if st.button("📤 Exportar Dados", type="secondary"):
-            # Simular exportação
-            st.info("📋 Funcionalidade de exportação será implementada")
+        st.info("📊 **Estatísticas**\nDados em tempo real")
+        orders = manager.get_all_orders()
+        clients = manager.get_all_clients()
+        st.metric("Total de Registros", len(orders) + len(clients))
+    
+    with col3:
+        st.info("🔗 **Integração**\nGoogle Calendar habilitado")
+        if st.button("📤 Exportar Relatório", help="Exporta dados para análise"):
+            st.info("📋 Funcionalidade em desenvolvimento")
+
+# SQL para criação das tabelas no Supabase
+def show_database_schema():
+    """Mostra o schema SQL para criar as tabelas no Supabase"""
+    st.markdown("---")
+    st.subheader("🗄️ Schema do Banco de Dados")
+    st.markdown("Execute os comandos SQL abaixo no Supabase para criar as tabelas necessárias:")
+    
+    sql_schema = """
+-- Tabela de Clientes
+CREATE TABLE clients (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    email TEXT,
+    address TEXT NOT NULL,
+    cto TEXT,
+    plan TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Tabela de Serviços
+CREATE TABLE services (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    price DECIMAL(10,2) DEFAULT 0,
+    duration INTEGER DEFAULT 2,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Tabela de Técnicos
+CREATE TABLE technicians (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name TEXT NOT NULL,
+    specialty TEXT NOT NULL,
+    region TEXT NOT NULL,
+    level TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Tabela de Equipamentos
+CREATE TABLE equipment (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    price DECIMAL(10,2) DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Tabela de Ordens de Serviço
+CREATE TABLE service_orders (
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    order_number TEXT NOT NULL UNIQUE,
+    client_id BIGINT REFERENCES clients(id) ON DELETE CASCADE,
+    service_id BIGINT REFERENCES services(id) ON DELETE CASCADE,
+    technician_id BIGINT REFERENCES technicians(id) ON DELETE CASCADE,
+    scheduled_date DATE NOT NULL,
+    scheduled_time TIME NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'Agendado',
+    priority TEXT DEFAULT 'Normal',
+    estimated_cost DECIMAL(10,2) DEFAULT 0,
+    equipment_used JSONB DEFAULT '[]'::jsonb,
+    signal_level TEXT,
+    observations TEXT,
+    cto_reference TEXT,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    customer_satisfaction INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Índices para melhor performance
+CREATE INDEX idx_service_orders_status ON service_orders(status);
+CREATE INDEX idx_service_orders_scheduled_date ON service_orders(scheduled_date);
+CREATE INDEX idx_service_orders_client_id ON service_orders(client_id);
+CREATE INDEX idx_service_orders_technician_id ON service_orders(technician_id);
+
+-- RLS (Row Level Security) - Opcional
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE technicians ENABLE ROW LEVEL SECURITY;
+ALTER TABLE equipment ENABLE ROW LEVEL SECURITY;
+ALTER TABLE service_orders ENABLE ROW LEVEL SECURITY;
+
+-- Política básica para permitir todas as operações (ajuste conforme necessário)
+CREATE POLICY "Allow all operations" ON clients FOR ALL USING (true);
+CREATE POLICY "Allow all operations" ON services FOR ALL USING (true);
+CREATE POLICY "Allow all operations" ON technicians FOR ALL USING (true);
+CREATE POLICY "Allow all operations" ON equipment FOR ALL USING (true);
+CREATE POLICY "Allow all operations" ON service_orders FOR ALL USING (true);
+    """
+    
+    st.code(sql_schema, language="sql")
 
 if __name__ == "__main__":
     main()
+    
+    # Mostrar schema do banco (apenas para desenvolvimento)
+    if st.sidebar.checkbox("🗄️ Mostrar Schema SQL"):
+        show_database_schema()
