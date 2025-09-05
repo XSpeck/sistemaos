@@ -839,7 +839,7 @@ def show_manage_orders(manager):
                     detail_display = st.selectbox("Selecionar OS:", detail_options, key="detail_list")
                     # Extrai o número da OS
                     os_number = detail_display.split(" - ")[0].split(" ")[-1]
-                    id = df[df["OS"] == detail_order_row.split(" - ")[0]]["ID"].iloc[0]
+    id = df[df["OS"] == detail_order_row.split(" - ")[0]]["ID"].iloc[0]
                 
                 # Busca dados completos da ordem
                 orders = manager.get_all_orders()
@@ -883,124 +883,124 @@ def show_manage_orders(manager):
                             st.markdown(f"**📋 Observações:** {selected_order_data['observations']}")
     else:
         st.info("📝 Nenhuma OS encontrada com os filtros aplicados")id = df[df["OS"] == os_number]["ID"].iloc[0]
-            
-            elif detail_search_method == "🎯 Busca Rápida":
-                # Busca com filtro dinâmico
-                detail_search = st.text_input("🔍 Buscar:", placeholder="Cliente, OS, CTO...", key="detail_search_input")
                 
-                if detail_search:
-                    detail_filtered = df[
-                        df["Cliente"].str.contains(detail_search, case=False, na=False) |
-                        df["OS"].str.contains(detail_search, case=False, na=False) |
-                        df["CTO"].str.contains(detail_search, case=False, na=False)
-                    ]
+        elif detail_search_method == "🎯 Busca Rápida":
+            # Busca com filtro dinâmico
+            detail_search = st.text_input("🔍 Buscar:", placeholder="Cliente, OS, CTO...", key="detail_search_input")
+            
+            if detail_search:
+                detail_filtered = df[
+                    df["Cliente"].str.contains(detail_search, case=False, na=False) |
+                    df["OS"].str.contains(detail_search, case=False, na=False) |
+                    df["CTO"].str.contains(detail_search, case=False, na=False)
+                ]
+                
+                if not detail_filtered.empty:
+                    # Mostra resultados em formato compacto
+                    for _, row in detail_filtered.head(5).iterrows():  # Limita a 5 resultados
+                        if st.button(f"👁️ {row['OS']} - {row['Cliente']}", key=f"detail_btn_{row['ID']}"):
+                            detail_order_id = row["ID"]
+                            detail_display = f"{row['OS']} - {row['Cliente']}"
+                else:
+                    st.info("🔍 Nenhum resultado encontrado")
+        
+        elif detail_search_method == "🔢 Por Número":
+            # Busca direta por número
+            detail_os_number = st.text_input("📱 Número da OS:", placeholder="Ex: OS12345678", key="detail_os_input")
+            
+            if detail_os_number:
+                detail_match = df[df["OS"] == detail_os_number.upper()]
+                if not detail_match.empty:
+                    row = detail_match.iloc[0]
+                    detail_order_id = row["ID"]
+                    detail_display = f"{row['OS']} - {row['Cliente']}"
+                    st.info(f"📋 OS encontrada: {row['Cliente']}")
+        
+        # Mostra detalhes da OS selecionada
+        if detail_order_id:
+            # Busca dados completos da ordem
+            orders = manager.get_all_orders()
+            selected_order_data = next((o for o in orders if o["id"] == detail_order_id), None)
+            
+            if selected_order_data:
+                clients = manager.get_all_clients()
+                services = manager.get_all_services()
+                technicians = manager.get_all_technicians()
+                
+                client = next((c for c in clients if c["id"] == selected_order_data["client_id"]), {})
+                service = next((s for s in services if s["id"] == selected_order_data["service_id"]), {})
+                technician = next((t for t in technicians if t["id"] == selected_order_data["technician_id"]), {})
+                
+                # Detalhes expandidos
+                with st.container():
+                    st.markdown(f"### 📋 {selected_order_data['order_number']}")
                     
-                    if not detail_filtered.empty:
-                        # Mostra resultados em formato compacto
-                        for _, row in detail_filtered.head(5).iterrows():  # Limita a 5 resultados
-                            if st.button(f"👁️ {row['OS']} - {row['Cliente']}", key=f"detail_btn_{row['ID']}"):
-                                detail_order_id = row["ID"]
-                                detail_display = f"{row['OS']} - {row['Cliente']}"
+                    # Status com cor
+                    status = selected_order_data.get('status', 'N/A')
+                    if status == "Concluído":
+                        st.success(f"✅ **Status:** {status}")
+                    elif status == "Em Campo":
+                        st.warning(f"🔄 **Status:** {status}")
+                    elif status == "Urgente":
+                        st.error(f"🚨 **Status:** {status}")
                     else:
-                        st.info("🔍 Nenhum resultado encontrado")
-            
-            elif detail_search_method == "🔢 Por Número":
-                # Busca direta por número
-                detail_os_number = st.text_input("📱 Número da OS:", placeholder="Ex: OS12345678", key="detail_os_input")
-                
-                if detail_os_number:
-                    detail_match = df[df["OS"] == detail_os_number.upper()]
-                    if not detail_match.empty:
-                        row = detail_match.iloc[0]
-                        detail_order_id = row["ID"]
-                        detail_display = f"{row['OS']} - {row['Cliente']}"
-                        st.info(f"📋 OS encontrada: {row['Cliente']}")
-            
-            # Mostra detalhes da OS selecionada
-            if detail_order_id:
-                # Busca dados completos da ordem
-                orders = manager.get_all_orders()
-                selected_order_data = next((o for o in orders if o["id"] == detail_order_id), None)
-                
-                if selected_order_data:
-                    clients = manager.get_all_clients()
-                    services = manager.get_all_services()
-                    technicians = manager.get_all_technicians()
+                        st.info(f"📊 **Status:** {status}")
                     
-                    client = next((c for c in clients if c["id"] == selected_order_data["client_id"]), {})
-                    service = next((s for s in services if s["id"] == selected_order_data["service_id"]), {})
-                    technician = next((t for t in technicians if t["id"] == selected_order_data["technician_id"]), {})
+                    # Informações em abas
+                    tab1, tab2, tab3, tab4 = st.tabs(["👤 Cliente", "🔧 Serviço", "👨‍🔧 Técnico", "📊 Detalhes"])
                     
-                    # Detalhes expandidos
-                    with st.container():
-                        st.markdown(f"### 📋 {selected_order_data['order_number']}")
+                    with tab1:
+                        st.markdown(f"""
+                        **🏠 Nome:** {client.get('name', 'N/A')}
+                        **📞 Telefone:** {client.get('phone', 'N/A')}
+                        **📧 Email:** {client.get('email', 'N/A')}
+                        **📍 Endereço:** {client.get('address', 'N/A')}
+                        **🌐 CTO:** {client.get('cto', 'N/A')}
+                        **📊 Plano:** {client.get('plan', 'N/A')}
+                        """)
+                    
+                    with tab2:
+                        st.markdown(f"""
+                        **🔧 Serviço:** {service.get('name', 'N/A')}
+                        **📋 Categoria:** {service.get('type', 'N/A')}
+                        **⏱️ Duração:** {service.get('duration', 'N/A')} horas
+                        **💰 Preço Base:** R$ {service.get('price', 0):.2f}
+                        **💰 Custo Total:** R$ {selected_order_data.get('estimated_cost', 0):.2f}
+                        """)
+                    
+                    with tab3:
+                        st.markdown(f"""
+                        **👨‍🔧 Nome:** {technician.get('name', 'N/A')}
+                        **🎯 Especialidade:** {technician.get('specialty', 'N/A')}
+                        **🌍 Região:** {technician.get('region', 'N/A')}
+                        **⭐ Nível:** {technician.get('level', 'N/A')}
+                        """)
+                    
+                    with tab4:
+                        st.markdown(f"""
+                        **📅 Data Agendamento:** {selected_order_data.get('scheduled_date', 'N/A')}
+                        **🕐 Hora:** {selected_order_data.get('scheduled_time', 'N/A')}
+                        **⚡ Prioridade:** {selected_order_data.get('priority', 'N/A')}
+                        **📝 Descrição:** {selected_order_data.get('description', 'N/A')}
+                        """)
                         
-                        # Status com cor
-                        status = selected_order_data.get('status', 'N/A')
-                        if status == "Concluído":
-                            st.success(f"✅ **Status:** {status}")
-                        elif status == "Em Campo":
-                            st.warning(f"🔄 **Status:** {status}")
-                        elif status == "Urgente":
-                            st.error(f"🚨 **Status:** {status}")
-                        else:
-                            st.info(f"📊 **Status:** {status}")
+                        if selected_order_data.get('signal_level'):
+                            st.markdown(f"**📶 Sinal:** {selected_order_data['signal_level']} dBm")
                         
-                        # Informações em abas
-                        tab1, tab2, tab3, tab4 = st.tabs(["👤 Cliente", "🔧 Serviço", "👨‍🔧 Técnico", "📊 Detalhes"])
+                        if selected_order_data.get('equipment_used'):
+                            equipment_str = ', '.join(selected_order_data['equipment_used']) if isinstance(selected_order_data['equipment_used'], list) else selected_order_data['equipment_used']
+                            st.markdown(f"**📦 Equipamentos:** {equipment_str}")
                         
-                        with tab1:
-                            st.markdown(f"""
-                            **🏠 Nome:** {client.get('name', 'N/A')}
-                            **📞 Telefone:** {client.get('phone', 'N/A')}
-                            **📧 Email:** {client.get('email', 'N/A')}
-                            **📍 Endereço:** {client.get('address', 'N/A')}
-                            **🌐 CTO:** {client.get('cto', 'N/A')}
-                            **📊 Plano:** {client.get('plan', 'N/A')}
-                            """)
+                        if selected_order_data.get('observations'):
+                            st.markdown(f"**📋 Observações:** {selected_order_data['observations']}")
                         
-                        with tab2:
-                            st.markdown(f"""
-                            **🔧 Serviço:** {service.get('name', 'N/A')}
-                            **📋 Categoria:** {service.get('type', 'N/A')}
-                            **⏱️ Duração:** {service.get('duration', 'N/A')} horas
-                            **💰 Preço Base:** R$ {service.get('price', 0):.2f}
-                            **💰 Custo Total:** R$ {selected_order_data.get('estimated_cost', 0):.2f}
-                            """)
+                        if selected_order_data.get('completed_at'):
+                            st.markdown(f"**✅ Concluído em:** {selected_order_data['completed_at']}")
                         
-                        with tab3:
-                            st.markdown(f"""
-                            **👨‍🔧 Nome:** {technician.get('name', 'N/A')}
-                            **🎯 Especialidade:** {technician.get('specialty', 'N/A')}
-                            **🌍 Região:** {technician.get('region', 'N/A')}
-                            **⭐ Nível:** {technician.get('level', 'N/A')}
-                            """)
-                        
-                        with tab4:
-                            st.markdown(f"""
-                            **📅 Data Agendamento:** {selected_order_data.get('scheduled_date', 'N/A')}
-                            **🕐 Hora:** {selected_order_data.get('scheduled_time', 'N/A')}
-                            **⚡ Prioridade:** {selected_order_data.get('priority', 'N/A')}
-                            **📝 Descrição:** {selected_order_data.get('description', 'N/A')}
-                            """)
-                            
-                            if selected_order_data.get('signal_level'):
-                                st.markdown(f"**📶 Sinal:** {selected_order_data['signal_level']} dBm")
-                            
-                            if selected_order_data.get('equipment_used'):
-                                equipment_str = ', '.join(selected_order_data['equipment_used']) if isinstance(selected_order_data['equipment_used'], list) else selected_order_data['equipment_used']
-                                st.markdown(f"**📦 Equipamentos:** {equipment_str}")
-                            
-                            if selected_order_data.get('observations'):
-                                st.markdown(f"**📋 Observações:** {selected_order_data['observations']}")
-                            
-                            if selected_order_data.get('completed_at'):
-                                st.markdown(f"**✅ Concluído em:** {selected_order_data['completed_at']}")
-                            
-                            if selected_order_data.get('customer_satisfaction'):
-                                satisfaction = selected_order_data['customer_satisfaction']
-                                stars = "⭐" * satisfaction
-                                st.markdown(f"**😊 Satisfação:** {satisfaction}/5 {stars}")
+                        if selected_order_data.get('customer_satisfaction'):
+                            satisfaction = selected_order_data['customer_satisfaction']
+                            stars = "⭐" * satisfaction
+                            st.markdown(f"**😊 Satisfação:** {satisfaction}/5 {stars}")
     else:
         st.info("📝 Nenhuma OS encontrada no sistema")id = df[df["OS"] == detail_order_row.split(" - ")[0]]["ID"].iloc[0]
                 
@@ -1699,4 +1699,3 @@ if __name__ == "__main__":
     # Mostrar schema do banco (apenas para desenvolvimento)
     if st.sidebar.checkbox("🗄️ Mostrar Schema SQL"):
         show_database_schema()
-
