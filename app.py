@@ -839,7 +839,7 @@ def show_manage_orders(manager):
                     detail_display = st.selectbox("Selecionar OS:", detail_options, key="detail_list")
                     # Extrai o número da OS
                     os_number = detail_display.split(" - ")[0].split(" ")[-1]
-    id = df[df["OS"] == detail_order_row.split(" - ")[0]]["ID"].iloc[0]
+                    id = df[df["OS"] == detail_order_row.split(" - ")[0]]["ID"].iloc[0]
                 
                 # Busca dados completos da ordem
                 orders = manager.get_all_orders()
@@ -1699,3 +1699,4 @@ if __name__ == "__main__":
     # Mostrar schema do banco (apenas para desenvolvimento)
     if st.sidebar.checkbox("🗄️ Mostrar Schema SQL"):
         show_database_schema()
+
