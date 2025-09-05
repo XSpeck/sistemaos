@@ -245,12 +245,11 @@ def show_manage_orders(manager):
                         stars = "⭐" * int(satisfaction)
                         st.markdown(f"**😊 Satisfação:** {satisfaction}/5 {stars}")
 
-
- #No seu manager (Supabase):
- def delete_order(self, order_id):
-     try:
-         result = self.supabase.table('service_orders').delete().eq('id', order_id).execute()
-         return bool(result.data)
-     except Exception as e:
-         print(f"Erro ao excluir OS: {e}")
-         return False
+# No seu manager (Supabase):
+# def delete_order(self, order_id):
+#     try:
+#         result = self.supabase.table('service_orders').delete().eq('id', order_id).execute()
+#         return bool(result.data)
+#     except Exception as e:
+#         print(f"Erro ao excluir OS: {e}")
+#         return False
